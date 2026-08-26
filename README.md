@@ -1,6 +1,6 @@
 # Cutover Graph
 
-Model and execute cutover dependencies, live readiness, blockers, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
+Model and execute cutover dependencies, live readiness, blockers, timing, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
 
 ## Why this exists
 
@@ -19,10 +19,13 @@ Cutover Graph turns the plan into machine-readable state that can answer both pl
 - summarize completion and running state
 - enforce readiness/go-no-go policies
 - require owners and evidence for completed steps
-- compare two cutover snapshots: status movement, blocker movement, progress, and critical-path change
+- calculate a timezone-aware baseline and live forecast from ISO-8601 timestamps
+- propagate delays through dependencies and identify originating vs upstream delay
+- forecast cutover completion and completion variance
+- compare two snapshots: status movement, blocker movement, progress, critical path, and schedule variance
 - emit JSON suitable for CI, dashboards, and agents
 
-This repository now covers the useful core of the earlier `cutover-orchestrator` idea; a second thin repository is not needed.
+This repository covers the useful core of the earlier `cutover-orchestrator` idea; a second thin repository is not needed.
 
 ## Quick start
 
@@ -31,21 +34,26 @@ python cutover_graph.py examples/customer-cutover.json validate
 python cutover_graph.py examples/customer-cutover.json plan
 python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
 python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
+python cutover_timing.py examples/timed-cutover-before.json
+python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
 python -m unittest discover -s tests -v
 ```
 
-The planner reports `executable_now`, live blockers, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. The diff explains what changed between two control-room snapshots.
+The planner reports `executable_now`, live blockers, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. Time-aware planning separates an originating delay from delay inherited through dependencies. The diff explains how the control-room state moved between snapshots.
 
 ## Plan model
 
 ```json
 {
+  "cutover_start": "2026-08-30T20:00:00Z",
+  "as_of": "2026-08-30T22:30:00Z",
   "tasks": [
     {
       "id": "load-customers",
       "owner": "mdg",
       "duration_minutes": 90,
       "status": "running",
+      "actual_start": "2026-08-30T20:45:00Z",
       "depends_on": ["load-reference-data"]
     },
     {
@@ -58,6 +66,8 @@ The planner reports `executable_now`, live blockers, progress, theoretical waves
   ]
 }
 ```
+
+For a running task, optional `remaining_minutes` can provide a more explicit forecast. Timestamps must include a timezone. Output is normalized to UTC.
 
 ## Readiness policy
 
@@ -76,20 +86,19 @@ Go/no-go criteria become reviewable and versionable instead of existing only in 
 
 ## Product direction
 
-1. Planned/start/end timestamps and actual duration.
-2. Delay propagation and forecasted completion.
-3. Rollback/contingency tasks and activation conditions.
-4. Checkpoints with multi-stage approval/evidence requirements.
-5. Resumable execution snapshots.
-6. Browser control-room view using the shared graph explorer.
-7. Reconciliation-as-Code checks as cutover gates.
-8. Project Evidence Graph output for auditable go-live evidence.
-9. Controlled command hooks behind explicit approval envelopes.
+1. Rollback/contingency tasks and activation conditions.
+2. Checkpoints with multi-stage approval/evidence requirements.
+3. Persisted/resumable execution snapshots.
+4. Browser control-room view using the shared graph explorer.
+5. Reconciliation-as-Code checks as cutover gates.
+6. Project Evidence Graph output for auditable go-live evidence.
+7. Controlled command hooks behind explicit approval envelopes.
 
 ## Design principles
 
 - deterministic planning before automation
 - explicit policy rather than hidden go/no-go logic
+- timezone-aware schedule math
 - versionable state
 - evidence-backed completion
 - portable machine-readable output
@@ -110,4 +119,4 @@ Go/no-go criteria become reviewable and versionable instead of existing only in 
 
 ## Status
 
-**MVP / active development.** Planning, live execution readiness, policy gates, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
+**MVP / active development.** Planning, live execution readiness, time-aware forecasting, delay propagation, policy gates, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
