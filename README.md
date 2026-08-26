@@ -1,6 +1,6 @@
 # Cutover Graph
 
-Model and execute cutover dependencies, live readiness, blockers, timing, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
+Model and execute cutover dependencies, live readiness, blockers, timing, checkpoints, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
 
 ## Why this exists
 
@@ -16,7 +16,10 @@ Cutover Graph turns the plan into machine-readable state that can answer both pl
 - calculate duration-based critical path
 - detect active blockers from current statuses
 - identify tasks executable **now** because every dependency is complete
-- summarize completion and running state
+- attach approval/evidence checkpoints to tasks
+- treat a `done` task with an unsatisfied checkpoint as **not dependency-complete**
+- report missing and duplicate checkpoint approvals/evidence
+- summarize checkpoint-aware completion and running state
 - enforce readiness/go-no-go policies
 - require owners and evidence for completed steps
 - calculate a timezone-aware baseline and live forecast from ISO-8601 timestamps
@@ -33,15 +36,41 @@ This repository covers the useful core of the earlier `cutover-orchestrator` ide
 python cutover_graph.py examples/customer-cutover.json validate
 python cutover_graph.py examples/customer-cutover.json plan
 python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
-python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
+python cutover_graph.py examples/checkpoint-cutover.json plan
+python cutover_gate.py examples/checkpoint-cutover.json examples/checkpoint-policy.json
 python cutover_timing.py examples/timed-cutover-before.json
 python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
 python -m unittest discover -s tests -v
 ```
 
-The planner reports `executable_now`, live blockers, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. Time-aware planning separates an originating delay from delay inherited through dependencies. The diff explains how the control-room state moved between snapshots.
+The planner reports `executable_now`, live blockers, checkpoint status, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. Time-aware planning separates an originating delay from delay inherited through dependencies.
 
-## Plan model
+## Checkpoint model
+
+A checkpoint belongs to a task and can require approvals and evidence before the task is considered complete for dependency purposes.
+
+```json
+{
+  "id": "reconcile-customers",
+  "status": "done",
+  "depends_on": ["load-customers"],
+  "checkpoint": {
+    "required_approvals": ["business", "data"],
+    "approvals": [
+      {"role": "business", "by": "business-owner"},
+      {"role": "data", "by": "data-lead"}
+    ],
+    "required_evidence": ["reconciliation"],
+    "evidence": [
+      {"type": "reconciliation", "ref": "recon/customer-final.json"}
+    ]
+  }
+}
+```
+
+If one required approval or evidence type is missing, downstream tasks remain blocked even when `reconcile-customers.status` is `done`. Duplicate records are reported and do not satisfy distinct requirements.
+
+## Time-aware plan model
 
 ```json
 {
@@ -55,13 +84,6 @@ The planner reports `executable_now`, live blockers, progress, theoretical waves
       "status": "running",
       "actual_start": "2026-08-30T20:45:00Z",
       "depends_on": ["load-reference-data"]
-    },
-    {
-      "id": "reconcile-customers",
-      "owner": "data",
-      "duration_minutes": 45,
-      "status": "pending",
-      "depends_on": ["load-customers"]
     }
   ]
 }
@@ -75,20 +97,19 @@ For a running task, optional `remaining_minutes` can provide a more explicit for
 {
   "require_valid_plan": true,
   "require_owners": true,
-  "required_complete": ["freeze-config", "load-reference-data"],
-  "require_evidence_for_completed": true,
-  "max_blocked_tasks": 3,
-  "max_critical_path_minutes": 240
+  "required_complete": ["reconcile-customers"],
+  "require_checkpoints_satisfied": true,
+  "max_blocked_tasks": 0
 }
 ```
 
-Go/no-go criteria become reviewable and versionable instead of existing only in meetings or status spreadsheets.
+`required_complete` is checkpoint-aware. A raw `done` status does not satisfy the rule when its checkpoint is incomplete.
 
 ## Product direction
 
 1. Rollback/contingency tasks and activation conditions.
-2. Checkpoints with multi-stage approval/evidence requirements.
-3. Persisted/resumable execution snapshots.
+2. Persisted/resumable execution snapshots.
+3. Workstream/owner risk concentration metrics.
 4. Browser control-room view using the shared graph explorer.
 5. Reconciliation-as-Code checks as cutover gates.
 6. Project Evidence Graph output for auditable go-live evidence.
@@ -98,6 +119,7 @@ Go/no-go criteria become reviewable and versionable instead of existing only in 
 
 - deterministic planning before automation
 - explicit policy rather than hidden go/no-go logic
+- checkpoint-aware completion
 - timezone-aware schedule math
 - versionable state
 - evidence-backed completion
@@ -119,4 +141,4 @@ Go/no-go criteria become reviewable and versionable instead of existing only in 
 
 ## Status
 
-**MVP / active development.** Planning, live execution readiness, time-aware forecasting, delay propagation, policy gates, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
+**MVP / active development.** Planning, checkpoint-aware execution, live readiness, time-aware forecasting, delay propagation, policy gates, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
