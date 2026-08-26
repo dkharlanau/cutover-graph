@@ -1,0 +1,33 @@
+{
+  "as_of": "2026-08-30T22:00:00Z",
+  "signals": {
+    "abort_go_live": false
+  },
+  "tasks": [
+    {
+      "id": "load-customers",
+      "owner": "mdg",
+      "workstream": "customer",
+      "status": "done",
+      "duration_minutes": 90,
+      "depends_on": []
+    },
+    {
+      "id": "reconcile-customers",
+      "owner": "data",
+      "workstream": "customer",
+      "risk": "high",
+      "status": "running",
+      "duration_minutes": 45,
+      "depends_on": ["load-customers"]
+    },
+    {
+      "id": "open-interfaces",
+      "owner": "integration",
+      "workstream": "integration",
+      "status": "pending",
+      "duration_minutes": 20,
+      "depends_on": ["reconcile-customers"]
+    }
+  ]
+}
