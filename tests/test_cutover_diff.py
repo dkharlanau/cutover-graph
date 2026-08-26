@@ -24,6 +24,7 @@ class CutoverDiffTests(unittest.TestCase):
         self.assertEqual(result["completion_ratio"]["delta"], 1 / 3)
         self.assertEqual(result["critical_path"]["duration_delta_minutes"], 10)
         self.assertFalse(result["critical_path"]["path_changed"])
+        self.assertFalse(result["timing"]["before_valid"])
 
     def test_added_removed_and_new_blocker(self):
         before = {"tasks": [{"id": "a", "status": "done", "depends_on": []}]}
@@ -35,6 +36,26 @@ class CutoverDiffTests(unittest.TestCase):
         self.assertEqual(result["added_tasks"], ["b", "c"])
         self.assertEqual(result["removed_tasks"], ["a"])
         self.assertEqual(result["newly_blocked"], [{"task": "c", "blocked_by": ["b"]}])
+
+    def test_timing_variance_movement(self):
+        before = {
+            "cutover_start": "2026-08-30T20:00:00Z",
+            "as_of": "2026-08-30T20:15:00Z",
+            "tasks": [{"id": "a", "status": "running", "duration_minutes": 10, "depends_on": []}],
+        }
+        after = {
+            "cutover_start": "2026-08-30T20:00:00Z",
+            "as_of": "2026-08-30T20:20:00Z",
+            "tasks": [{"id": "a", "status": "running", "duration_minutes": 10, "depends_on": []}],
+        }
+        result = compare(before, after)
+        self.assertTrue(result["timing"]["before_valid"])
+        self.assertTrue(result["timing"]["after_valid"])
+        self.assertEqual(result["timing"]["completion_variance_minutes"], {"before": 5, "after": 10, "delta": 5})
+        self.assertEqual(result["timing"]["forecast_completion"], {
+            "before": "2026-08-30T20:15:00Z",
+            "after": "2026-08-30T20:20:00Z",
+        })
 
 
 if __name__ == "__main__":
