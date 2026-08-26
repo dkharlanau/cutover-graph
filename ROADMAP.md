@@ -23,14 +23,17 @@
 - stable `eac://` refs for main tasks, checkpoints, contingencies, and contingency tasks
 - checkpoint evidence refs preserved in a domain-owned artifact index
 - artifact-index JSON Schema and consumer-facing contract
+- immutable execution snapshots with deterministic `snapshot_id`
+- plan fingerprint, signals, active contingencies, task/checkpoint state captured in snapshots
+- legal state-transition validation with checkpoint regression protection
+- parent/timestamp/add-remove transition controls and optional policy overrides
 - unit tests and GitHub Actions workflow
 
-## Now — make execution resumable and risk-aware
+## Now — make execution risk-aware and reviewable
 
-1. Persist immutable execution snapshots with deterministic snapshot identity.
-2. Validate legal task-state transitions between snapshots.
-3. Add workstream/owner risk concentration metrics.
-4. Generate a concise control-room decision report from current plan + previous snapshot.
+1. Add workstream/owner risk concentration metrics.
+2. Generate a concise control-room decision report from current plan + previous trusted snapshot.
+3. Compare trusted snapshot state with timing/blocker movement in one operational readout.
 
 ## Next — ecosystem execution controls
 
@@ -50,4 +53,4 @@
 
 During a real cutover the model should answer, from the current state alone:
 
-> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, what changed since the previous trusted snapshot, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
+> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, what changed since the previous trusted snapshot, did the state transition remain legal, where is operational risk concentrated, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
