@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dkharlanau/cutover-graph/schema/artifact-index.schema.json",
+  "title": "Cutover Graph artifact index",
+  "type": "object",
+  "required": ["schema_version", "repository", "valid", "validation", "tasks", "contingencies"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "repository": {"const": "dkharlanau/cutover-graph"},
+    "valid": {"type": "boolean"},
+    "validation": {"type": "object"},
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "artifact_ref", "status", "complete", "depends_on_refs"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "artifact_ref": {"type": "string", "pattern": "^eac://dkharlanau/cutover-graph/task/.+"},
+          "status": {"type": "string"},
+          "complete": {"type": "boolean"},
+          "depends_on_refs": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^eac://dkharlanau/cutover-graph/task/.+"}
+          },
+          "owner": {},
+          "workstream": {},
+          "risk": {},
+          "duration_minutes": {"type": ["number", "integer"]},
+          "actual_start": {"type": "string"},
+          "actual_end": {"type": "string"},
+          "remaining_minutes": {"type": ["number", "integer"]},
+          "checkpoint": {
+            "type": "object",
+            "required": [
+              "artifact_ref", "passed", "missing_approvals", "missing_evidence",
+              "duplicate_approvals", "duplicate_evidence", "required_approvals",
+              "required_evidence", "evidence_refs"
+            ],
+            "properties": {
+              "artifact_ref": {"type": "string", "pattern": "^eac://dkharlanau/cutover-graph/checkpoint/.+"},
+              "passed": {"type": "boolean"},
+              "missing_approvals": {"type": "array", "items": {"type": "string"}},
+              "missing_evidence": {"type": "array", "items": {"type": "string"}},
+              "duplicate_approvals": {"type": "array", "items": {"type": "string"}},
+              "duplicate_evidence": {"type": "array", "items": {"type": "string"}},
+              "required_approvals": {"type": "array", "items": {"type": "string"}},
+              "required_evidence": {"type": "array", "items": {"type": "string"}},
+              "evidence_refs": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "contingencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "artifact_ref", "active", "activation", "tasks"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "artifact_ref": {"type": "string", "pattern": "^eac://dkharlanau/cutover-graph/contingency/.+"},
+          "active": {"type": "boolean"},
+          "activation": {"type": "object"},
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "artifact_ref", "status", "depends_on_refs"],
+              "properties": {
+                "id": {"type": "string"},
+                "artifact_ref": {"type": "string", "pattern": "^eac://dkharlanau/cutover-graph/contingency/.+/task/.+"},
+                "status": {"type": "string"},
+                "depends_on_refs": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
