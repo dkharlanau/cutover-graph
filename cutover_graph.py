@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,56 @@ def load_plan(path: str | Path) -> dict[str, Any]:
 
 def _status(task: dict[str, Any]) -> str:
     return str(task.get("status", "pending")).strip().lower()
+
+
+def _record_key(record: Any, field: str) -> str:
+    if isinstance(record, str):
+        return record.strip()
+    if isinstance(record, dict):
+        return str(record.get(field) or record.get("id") or record.get("name") or "").strip()
+    return ""
+
+
+def checkpoint_status(task: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate optional approval/evidence gate attached to a task."""
+    checkpoint = task.get("checkpoint")
+    if not isinstance(checkpoint, dict):
+        return {
+            "required": False,
+            "passed": True,
+            "missing_approvals": [],
+            "missing_evidence": [],
+            "duplicate_approvals": [],
+            "duplicate_evidence": [],
+        }
+
+    required_approvals = sorted({str(value).strip() for value in checkpoint.get("required_approvals", []) if str(value).strip()})
+    approval_values = [_record_key(record, "role") for record in checkpoint.get("approvals", [])]
+    approval_values = [value for value in approval_values if value]
+    approval_set = set(approval_values)
+
+    required_evidence = sorted({str(value).strip() for value in checkpoint.get("required_evidence", []) if str(value).strip()})
+    evidence_values = [_record_key(record, "type") for record in checkpoint.get("evidence", [])]
+    evidence_values = [value for value in evidence_values if value]
+    evidence_set = set(evidence_values)
+
+    duplicate_approvals = sorted(value for value, count in Counter(approval_values).items() if count > 1)
+    duplicate_evidence = sorted(value for value, count in Counter(evidence_values).items() if count > 1)
+    missing_approvals = sorted(set(required_approvals) - approval_set)
+    missing_evidence = sorted(set(required_evidence) - evidence_set)
+
+    return {
+        "required": True,
+        "passed": not missing_approvals and not missing_evidence,
+        "missing_approvals": missing_approvals,
+        "missing_evidence": missing_evidence,
+        "duplicate_approvals": duplicate_approvals,
+        "duplicate_evidence": duplicate_evidence,
+    }
+
+
+def task_complete(task: dict[str, Any]) -> bool:
+    return _status(task) in DONE_STATES and checkpoint_status(task)["passed"]
 
 
 def _task_index(plan: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], list[str]]:
@@ -146,16 +196,26 @@ def critical_path(plan: dict[str, Any]) -> dict[str, Any]:
     return {"tasks": best_path[end], "duration_minutes": best_duration[end]}
 
 
+def checkpoint_report(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    tasks, _ = _task_index(plan)
+    result = []
+    for task_id in sorted(tasks):
+        status = checkpoint_status(tasks[task_id])
+        if status["required"]:
+            result.append({"task": task_id, **status})
+    return result
+
+
 def blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
     tasks, _ = _task_index(plan)
     blocked = []
     for task_id, task in tasks.items():
-        if _status(task) in DONE_STATES:
+        if task_complete(task):
             continue
         unresolved = [
             str(dep)
             for dep in task.get("depends_on", [])
-            if str(dep) in tasks and _status(tasks[str(dep)]) not in DONE_STATES
+            if str(dep) in tasks and not task_complete(tasks[str(dep)])
         ]
         if unresolved:
             blocked.append({"task": task_id, "blocked_by": unresolved})
@@ -163,7 +223,7 @@ def blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def executable_now(plan: dict[str, Any]) -> list[str]:
-    """Return not-started tasks whose dependencies are all complete."""
+    """Return not-started tasks whose dependencies are all checkpoint-complete."""
     tasks, _ = _task_index(plan)
     ready = []
     for task_id, task in tasks.items():
@@ -171,19 +231,25 @@ def executable_now(plan: dict[str, Any]) -> list[str]:
         if status in DONE_STATES or status in RUNNING_STATES:
             continue
         deps = [str(dep) for dep in task.get("depends_on", [])]
-        if all(dep in tasks and _status(tasks[dep]) in DONE_STATES for dep in deps):
+        if all(dep in tasks and task_complete(tasks[dep]) for dep in deps):
             ready.append(task_id)
     return sorted(ready)
 
 
 def progress(plan: dict[str, Any]) -> dict[str, Any]:
     tasks, _ = _task_index(plan)
-    completed = sorted(task_id for task_id, task in tasks.items() if _status(task) in DONE_STATES)
+    completed = sorted(task_id for task_id, task in tasks.items() if task_complete(task))
+    status_done_but_checkpoint_blocked = sorted(
+        task_id
+        for task_id, task in tasks.items()
+        if _status(task) in DONE_STATES and not task_complete(task)
+    )
     running = sorted(task_id for task_id, task in tasks.items() if _status(task) in RUNNING_STATES)
     total = len(tasks)
     return {
         "total": total,
         "completed": completed,
+        "status_done_but_checkpoint_blocked": status_done_but_checkpoint_blocked,
         "running": running,
         "completed_count": len(completed),
         "running_count": len(running),
@@ -199,6 +265,7 @@ def build_report(plan: dict[str, Any]) -> dict[str, Any]:
         "waves": execution_waves(plan) if validation["valid"] else [],
         "critical_path": critical_path(plan) if validation["valid"] else {"tasks": [], "duration_minutes": None},
         "progress": progress(plan),
+        "checkpoints": checkpoint_report(plan),
         "executable_now": executable_now(plan) if valid_dependencies else [],
         "blockers": blockers(plan) if valid_dependencies else [],
     }
