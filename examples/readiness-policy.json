@@ -1,0 +1,8 @@
+{
+  "require_valid_plan": true,
+  "require_owners": true,
+  "required_complete": ["freeze-config", "load-reference-data"],
+  "require_evidence_for_completed": true,
+  "max_blocked_tasks": 3,
+  "max_critical_path_minutes": 240
+}
