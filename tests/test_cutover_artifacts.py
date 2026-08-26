@@ -25,7 +25,7 @@ class CutoverArtifactTests(unittest.TestCase):
                 },
                 {"id": "open-interfaces", "status": "pending", "depends_on": ["reconcile-customers"]}
             ],
-            "signals": {"abort": false},
+            "signals": {"abort": False},
             "contingencies": [
                 {
                     "id": "rollback-customer",
