@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cutover_graph import DONE_STATES, build_report, load_plan
+from cutover_graph import DONE_STATES, build_report, load_plan, task_complete
 
 
 def load_policy(path: str | Path) -> dict[str, Any]:
@@ -38,18 +38,25 @@ def evaluate(plan: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
     incomplete = sorted(
         task_id
         for task_id in required_complete
-        if task_id not in tasks or str(tasks[task_id].get("status", "pending")).lower() not in DONE_STATES
+        if task_id not in tasks or not task_complete(tasks[task_id])
     )
     if required_complete:
         add("required_complete", not incomplete, incomplete, [])
 
+    if policy.get("require_checkpoints_satisfied", False):
+        unsatisfied = sorted(item["task"] for item in report["checkpoints"] if not item["passed"])
+        add("checkpoints_satisfied", not unsatisfied, unsatisfied, [])
+
     if policy.get("require_evidence_for_completed", False):
-        missing_evidence = sorted(
-            task_id
-            for task_id, task in tasks.items()
-            if str(task.get("status", "pending")).lower() in DONE_STATES and not task.get("evidence")
-        )
-        add("completed_task_evidence", not missing_evidence, missing_evidence, [])
+        missing_evidence = []
+        for task_id, task in tasks.items():
+            if str(task.get("status", "pending")).lower() not in DONE_STATES:
+                continue
+            checkpoint = task.get("checkpoint") if isinstance(task.get("checkpoint"), dict) else {}
+            has_evidence = bool(task.get("evidence")) or bool(checkpoint.get("evidence"))
+            if not has_evidence:
+                missing_evidence.append(task_id)
+        add("completed_task_evidence", not missing_evidence, sorted(missing_evidence), [])
 
     max_blocked = policy.get("max_blocked_tasks")
     if max_blocked is not None:
@@ -67,6 +74,7 @@ def evaluate(plan: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
         "checks": checks,
         "failed_checks": [check["name"] for check in checks if not check["passed"]],
         "active_blockers": report["blockers"],
+        "checkpoints": report["checkpoints"],
         "critical_path": report["critical_path"],
     }
 
