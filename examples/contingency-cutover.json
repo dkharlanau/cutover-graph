@@ -1,0 +1,25 @@
+{
+  "signals": {
+    "abort_go_live": false
+  },
+  "tasks": [
+    {"id": "freeze-config", "status": "done", "depends_on": []},
+    {"id": "load-customers", "status": "failed", "depends_on": ["freeze-config"]},
+    {"id": "open-interfaces", "status": "pending", "depends_on": ["load-customers"]}
+  ],
+  "contingencies": [
+    {
+      "id": "rollback-customer-load",
+      "mode": "any",
+      "activate_when": [
+        {"task": "load-customers", "status_in": ["failed"]},
+        {"signal": "abort_go_live", "equals": true}
+      ],
+      "tasks": [
+        {"id": "close-inbound", "status": "done", "depends_on": []},
+        {"id": "restore-customer-snapshot", "status": "pending", "depends_on": ["close-inbound"]},
+        {"id": "reconcile-restored-state", "status": "pending", "depends_on": ["restore-customer-snapshot"]}
+      ]
+    }
+  ]
+}
