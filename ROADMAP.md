@@ -20,33 +20,34 @@
 - snapshot diff for status, blockers, progress, critical path, and timing
 - explicit rollback/contingency branches with task/signal activation rules
 - validation and execution state for active rollback branches
+- stable `eac://` refs for main tasks, checkpoints, contingencies, and contingency tasks
+- checkpoint evidence refs preserved in a domain-owned artifact index
+- artifact-index JSON Schema and consumer-facing contract
 - unit tests and GitHub Actions workflow
 
 ## Now — make execution resumable and risk-aware
 
-1. Persist execution snapshots so a cutover can resume safely.
-2. Add workstream/owner risk concentration metrics.
-3. Emit stable cross-repository artifact refs for tasks/checkpoints/evidence.
+1. Persist immutable execution snapshots with deterministic snapshot identity.
+2. Validate legal task-state transitions between snapshots.
+3. Add workstream/owner risk concentration metrics.
+4. Generate a concise control-room decision report from current plan + previous snapshot.
 
-## Next — control room
+## Next — ecosystem execution controls
 
-- generate a concise go/no-go/rollback report
-- show blocker and delay concentration by owner/workstream
-- show critical-path and forecast movement visually
-- produce next-action recommendations from deterministic state
-- feed the shared enterprise graph explorer
-- create post-cutover evidence output for Project Evidence Graph
+- consume Reconciliation-as-Code result status directly as a checkpoint control without copying evidence content
+- emit cutover evidence fragments for Project Evidence Graph through the artifact index boundary
+- feed the shared enterprise graph explorer/control-room view
+- add next-action recommendations from deterministic state
 
 ## Later — automation boundary
 
 - controlled command hooks for executable tasks
 - approval envelope before state-changing actions
 - external status adapters for ticketing/monitoring systems
-- Reconciliation as Code checks as cutover gates
-- evidence-pack generation for audit and handover
+- signed/attested snapshot and evidence-pack manifests
 
 ## Product test
 
 During a real cutover the model should answer, from the current state alone:
 
-> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
+> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, what changed since the previous trusted snapshot, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
