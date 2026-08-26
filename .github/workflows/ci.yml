@@ -16,6 +16,8 @@ jobs:
       - run: python cutover_graph.py examples/customer-cutover.json validate
       - run: python cutover_graph.py examples/customer-cutover.json plan
       - run: python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
+      - run: python cutover_graph.py examples/checkpoint-cutover.json plan
+      - run: python cutover_gate.py examples/checkpoint-cutover.json examples/checkpoint-policy.json
       - run: python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
       - run: python cutover_timing.py examples/timed-cutover-before.json
       - run: python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
