@@ -16,3 +16,4 @@ jobs:
       - run: python cutover_graph.py examples/customer-cutover.json validate
       - run: python cutover_graph.py examples/customer-cutover.json plan
       - run: python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
+      - run: python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
