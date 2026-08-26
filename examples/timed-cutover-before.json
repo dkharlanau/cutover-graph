@@ -1,0 +1,12 @@
+{
+  "cutover_start": "2026-08-30T20:00:00Z",
+  "as_of": "2026-08-30T22:30:00Z",
+  "tasks": [
+    {"id": "freeze-config", "owner": "basis", "duration_minutes": 15, "status": "done", "actual_start": "2026-08-30T20:00:00Z", "actual_end": "2026-08-30T20:15:00Z", "depends_on": []},
+    {"id": "load-reference-data", "owner": "data", "duration_minutes": 30, "status": "done", "actual_start": "2026-08-30T20:15:00Z", "actual_end": "2026-08-30T20:45:00Z", "depends_on": ["freeze-config"]},
+    {"id": "load-customers", "owner": "mdg", "duration_minutes": 90, "status": "running", "actual_start": "2026-08-30T20:45:00Z", "depends_on": ["load-reference-data"]},
+    {"id": "reconcile-customers", "owner": "data", "duration_minutes": 45, "status": "pending", "depends_on": ["load-customers"]},
+    {"id": "open-interfaces", "owner": "integration", "duration_minutes": 20, "status": "pending", "depends_on": ["reconcile-customers"]},
+    {"id": "business-smoke-test", "owner": "business", "duration_minutes": 30, "status": "pending", "depends_on": ["open-interfaces"]}
+  ]
+}
