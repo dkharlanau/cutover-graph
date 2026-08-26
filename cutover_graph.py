@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import defaultdict, deque
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 
 DONE_STATES = {"done", "completed", "verified"}
+RUNNING_STATES = {"running", "in_progress", "in-progress"}
 
 
 def load_plan(path: str | Path) -> dict[str, Any]:
@@ -19,6 +20,10 @@ def load_plan(path: str | Path) -> dict[str, Any]:
     if not isinstance(plan, dict):
         raise ValueError("plan must be a JSON object")
     return plan
+
+
+def _status(task: dict[str, Any]) -> str:
+    return str(task.get("status", "pending")).strip().lower()
 
 
 def _task_index(plan: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], list[str]]:
@@ -145,25 +150,57 @@ def blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
     tasks, _ = _task_index(plan)
     blocked = []
     for task_id, task in tasks.items():
-        if str(task.get("status", "pending")).lower() in DONE_STATES:
+        if _status(task) in DONE_STATES:
             continue
         unresolved = [
             str(dep)
             for dep in task.get("depends_on", [])
-            if str(dep) in tasks and str(tasks[str(dep)].get("status", "pending")).lower() not in DONE_STATES
+            if str(dep) in tasks and _status(tasks[str(dep)]) not in DONE_STATES
         ]
         if unresolved:
             blocked.append({"task": task_id, "blocked_by": unresolved})
     return blocked
 
 
+def executable_now(plan: dict[str, Any]) -> list[str]:
+    """Return not-started tasks whose dependencies are all complete."""
+    tasks, _ = _task_index(plan)
+    ready = []
+    for task_id, task in tasks.items():
+        status = _status(task)
+        if status in DONE_STATES or status in RUNNING_STATES:
+            continue
+        deps = [str(dep) for dep in task.get("depends_on", [])]
+        if all(dep in tasks and _status(tasks[dep]) in DONE_STATES for dep in deps):
+            ready.append(task_id)
+    return sorted(ready)
+
+
+def progress(plan: dict[str, Any]) -> dict[str, Any]:
+    tasks, _ = _task_index(plan)
+    completed = sorted(task_id for task_id, task in tasks.items() if _status(task) in DONE_STATES)
+    running = sorted(task_id for task_id, task in tasks.items() if _status(task) in RUNNING_STATES)
+    total = len(tasks)
+    return {
+        "total": total,
+        "completed": completed,
+        "running": running,
+        "completed_count": len(completed),
+        "running_count": len(running),
+        "completion_ratio": 1.0 if total == 0 else len(completed) / total,
+    }
+
+
 def build_report(plan: dict[str, Any]) -> dict[str, Any]:
     validation = validate(plan)
+    valid_dependencies = not validation["missing_dependencies"]
     return {
         "validation": validation,
         "waves": execution_waves(plan) if validation["valid"] else [],
         "critical_path": critical_path(plan) if validation["valid"] else {"tasks": [], "duration_minutes": None},
-        "blockers": blockers(plan) if not validation["missing_dependencies"] else [],
+        "progress": progress(plan),
+        "executable_now": executable_now(plan) if valid_dependencies else [],
+        "blockers": blockers(plan) if valid_dependencies else [],
     }
 
 
