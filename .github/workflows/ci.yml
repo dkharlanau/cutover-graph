@@ -33,3 +33,8 @@ jobs:
       - run: python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
       - run: python cutover_contingency.py examples/contingency-cutover.json
       - run: python cutover_artifacts.py examples/contingency-cutover.json --output /tmp/contingency-artifacts.json
+      - run: python cutover_snapshot.py create examples/snapshots/before.json --output /tmp/snapshot-before.json
+      - run: python cutover_snapshot.py validate /tmp/snapshot-before.json
+      - run: python cutover_snapshot.py create examples/snapshots/after.json --output /tmp/snapshot-after.json
+      - run: python cutover_snapshot.py validate /tmp/snapshot-after.json
+      - run: python cutover_snapshot.py transition /tmp/snapshot-before.json /tmp/snapshot-after.json
