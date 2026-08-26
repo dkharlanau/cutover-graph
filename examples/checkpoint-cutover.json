@@ -10,6 +10,8 @@
     {
       "id": "reconcile-customers",
       "owner": "data",
+      "workstream": "customer",
+      "risk": "high",
       "duration_minutes": 45,
       "status": "done",
       "depends_on": ["load-customers"],
@@ -21,7 +23,10 @@
         ],
         "required_evidence": ["reconciliation"],
         "evidence": [
-          {"type": "reconciliation", "ref": "recon/customer-final.json"}
+          {
+            "type": "reconciliation",
+            "ref": "eac://dkharlanau/reconciliation-as-code/reconciliation/customer-country-post-load/run/production-load-01"
+          }
         ]
       }
     },
