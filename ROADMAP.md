@@ -27,13 +27,16 @@
 - plan fingerprint, signals, active contingencies, task/checkpoint state captured in snapshots
 - legal state-transition validation with checkpoint regression protection
 - parent/timestamp/add-remove transition controls and optional policy overrides
+- deterministic task open-risk scoring
+- owner/workstream risk concentration and critical-path exposure
+- explicit missing/unknown risk and unassigned owner/workstream buckets
 - unit tests and GitHub Actions workflow
 
-## Now — make execution risk-aware and reviewable
+## Now — build the control-room decision surface
 
-1. Add workstream/owner risk concentration metrics.
-2. Generate a concise control-room decision report from current plan + previous trusted snapshot.
-3. Compare trusted snapshot state with timing/blocker movement in one operational readout.
+1. Generate one concise control-room report from current plan + previous trusted snapshot.
+2. Combine legal transition, executable-now, blockers/checkpoints, timing forecast, contingency state, and risk concentration.
+3. Expose machine JSON plus Markdown/HTML without losing the underlying deterministic signals.
 
 ## Next — ecosystem execution controls
 
