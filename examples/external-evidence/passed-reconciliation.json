@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "spec_version": 1,
+  "engine_version": "0.3.0",
+  "configuration_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run": {
+    "id": "production-load-01",
+    "started_at": "2026-08-26T09:59:00Z",
+    "finished_at": "2026-08-26T10:00:00Z",
+    "duration_ms": 60000,
+    "python_version": "3.12",
+    "platform": "linux"
+  },
+  "reconciliation": "customer-country-post-load",
+  "status": "passed",
+  "generated_at": "2026-08-26T10:00:01Z",
+  "inputs": {
+    "source": {
+      "path": "legacy-customers.csv",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "target": {
+      "path": "s4-business-partners.csv",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  },
+  "summary": {
+    "source_records": 100,
+    "target_records": 100,
+    "matched_records": 100,
+    "missing_in_target": 0,
+    "unexpected_in_target": 0,
+    "checks_total": 2,
+    "checks_failed": 0,
+    "warnings_failed": 0
+  },
+  "checks": []
+}
