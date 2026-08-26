@@ -1,0 +1,7 @@
+{
+  "require_valid_plan": true,
+  "require_owners": true,
+  "required_complete": ["load-customers", "reconcile-customers"],
+  "require_checkpoints_satisfied": true,
+  "max_blocked_tasks": 0
+}
