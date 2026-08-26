@@ -1,6 +1,6 @@
 import unittest
 
-from cutover_graph import blockers, build_report, critical_path, execution_waves, validate
+from cutover_graph import blockers, build_report, critical_path, executable_now, execution_waves, progress, validate
 
 
 class CutoverGraphTests(unittest.TestCase):
@@ -25,6 +25,22 @@ class CutoverGraphTests(unittest.TestCase):
     def test_blockers(self):
         self.assertEqual(blockers(self.plan), [{"task": "d", "blocked_by": ["b", "c"]}])
 
+    def test_executable_now(self):
+        self.assertEqual(executable_now(self.plan), ["b", "c"])
+        running = {"tasks": [
+            {"id": "a", "status": "done", "depends_on": []},
+            {"id": "b", "status": "running", "depends_on": ["a"]},
+            {"id": "c", "status": "pending", "depends_on": ["a"]},
+        ]}
+        self.assertEqual(executable_now(running), ["c"])
+
+    def test_progress(self):
+        result = progress(self.plan)
+        self.assertEqual(result["completed"], ["a"])
+        self.assertEqual(result["running"], [])
+        self.assertEqual(result["completed_count"], 1)
+        self.assertEqual(result["completion_ratio"], 0.25)
+
     def test_missing_dependency_invalidates_plan(self):
         plan = {"tasks": [{"id": "x", "depends_on": ["missing"]}]}
         result = validate(plan)
@@ -43,6 +59,8 @@ class CutoverGraphTests(unittest.TestCase):
         report = build_report(self.plan)
         self.assertTrue(report["validation"]["valid"])
         self.assertEqual(report["critical_path"]["duration_minutes"], 60)
+        self.assertEqual(report["executable_now"], ["b", "c"])
+        self.assertEqual(report["progress"]["completed_count"], 1)
 
 
 if __name__ == "__main__":
