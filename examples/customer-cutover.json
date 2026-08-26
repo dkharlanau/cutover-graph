@@ -1,7 +1,7 @@
 {
   "tasks": [
-    {"id": "freeze-config", "owner": "basis", "duration_minutes": 15, "status": "done", "depends_on": []},
-    {"id": "load-reference-data", "owner": "data", "duration_minutes": 30, "status": "done", "depends_on": ["freeze-config"]},
+    {"id": "freeze-config", "owner": "basis", "duration_minutes": 15, "status": "done", "evidence": ["change-freeze-approved"], "depends_on": []},
+    {"id": "load-reference-data", "owner": "data", "duration_minutes": 30, "status": "done", "evidence": ["reference-data-reconciliation"], "depends_on": ["freeze-config"]},
     {"id": "load-customers", "owner": "mdg", "duration_minutes": 90, "status": "running", "depends_on": ["load-reference-data"]},
     {"id": "reconcile-customers", "owner": "data", "duration_minutes": 45, "status": "pending", "depends_on": ["load-customers"]},
     {"id": "open-interfaces", "owner": "integration", "duration_minutes": 20, "status": "pending", "depends_on": ["reconcile-customers"]},
