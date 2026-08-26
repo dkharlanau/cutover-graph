@@ -8,8 +8,10 @@
 - deterministic execution waves
 - duration-based critical path
 - live blockers from task state
-- tasks executable now from completed dependencies
-- live completion/running summary
+- tasks executable now from checkpoint-complete dependencies
+- checkpoint-aware completion/running summary
+- approval/evidence checkpoint gates
+- duplicate/missing checkpoint diagnostics
 - machine-readable readiness/go-no-go policy
 - owner and completed-task evidence gates
 - timezone-aware baseline and live forecast
@@ -21,9 +23,8 @@
 ## Now — make execution recoverable and controllable
 
 1. Model rollback/contingency tasks and activation conditions.
-2. Add checkpoints with explicit approval/evidence requirements.
-3. Persist execution snapshots so a cutover can resume safely.
-4. Add workstream/owner risk concentration metrics.
+2. Persist execution snapshots so a cutover can resume safely.
+3. Add workstream/owner risk concentration metrics.
 
 ## Next — control room
 
@@ -46,4 +47,4 @@
 
 During a real cutover the model should answer, from the current state alone:
 
-> What can run now, what is blocking go-live, which task caused the delay, what completion is now forecast, and what evidence is still missing for a defensible go/no-go decision?
+> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, and what approvals/evidence are still missing?
