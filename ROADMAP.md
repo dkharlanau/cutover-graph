@@ -12,22 +12,24 @@
 - live completion/running summary
 - machine-readable readiness/go-no-go policy
 - owner and completed-task evidence gates
-- snapshot diff for status, blockers, progress, and critical path
+- timezone-aware baseline and live forecast
+- delay propagation with originating vs inherited delay
+- forecasted cutover completion and schedule variance
+- snapshot diff for status, blockers, progress, critical path, and timing
 - unit tests and GitHub Actions workflow
 
-## Now — move from state to time-aware execution
+## Now — make execution recoverable and controllable
 
-1. Add planned/start/end timestamps and actual duration.
-2. Calculate delay propagation and forecasted completion.
-3. Model rollback/contingency tasks and activation conditions.
-4. Add checkpoints with explicit approval/evidence requirements.
-5. Persist execution snapshots so a cutover can resume safely.
+1. Model rollback/contingency tasks and activation conditions.
+2. Add checkpoints with explicit approval/evidence requirements.
+3. Persist execution snapshots so a cutover can resume safely.
+4. Add workstream/owner risk concentration metrics.
 
 ## Next — control room
 
 - generate a concise go/no-go report
-- show blocker concentration by owner/workstream
-- show critical-path movement visually
+- show blocker and delay concentration by owner/workstream
+- show critical-path and forecast movement visually
 - produce next-action recommendations from deterministic state
 - feed the shared enterprise graph explorer
 - create post-cutover evidence output for Project Evidence Graph
@@ -44,4 +46,4 @@
 
 During a real cutover the model should answer, from the current state alone:
 
-> What can run now, what is blocking go-live, what changed since the last snapshot, and what evidence is still missing for a defensible go/no-go decision?
+> What can run now, what is blocking go-live, which task caused the delay, what completion is now forecast, and what evidence is still missing for a defensible go/no-go decision?
