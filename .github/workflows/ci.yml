@@ -39,3 +39,5 @@ jobs:
       - run: python cutover_snapshot.py validate /tmp/snapshot-after.json
       - run: python cutover_snapshot.py transition /tmp/snapshot-before.json /tmp/snapshot-after.json
       - run: python cutover_risk.py examples/snapshots/after.json
+      - run: python control_room.py examples/snapshots/after.json --previous-snapshot /tmp/snapshot-before.json --json-output /tmp/control-room.json --markdown /tmp/control-room.md --html /tmp/control-room.html
+      - run: test -s /tmp/control-room.json && test -s /tmp/control-room.md && test -s /tmp/control-room.html
