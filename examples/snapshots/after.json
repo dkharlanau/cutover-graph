@@ -1,0 +1,49 @@
+{
+  "as_of": "2026-08-30T22:20:00Z",
+  "signals": {
+    "abort_go_live": false
+  },
+  "tasks": [
+    {
+      "id": "load-customers",
+      "owner": "mdg",
+      "workstream": "customer",
+      "status": "done",
+      "duration_minutes": 90,
+      "depends_on": []
+    },
+    {
+      "id": "reconcile-customers",
+      "owner": "data",
+      "workstream": "customer",
+      "risk": "high",
+      "status": "done",
+      "duration_minutes": 45,
+      "actual_end": "2026-08-30T22:12:00Z",
+      "depends_on": ["load-customers"],
+      "checkpoint": {
+        "required_approvals": ["business", "data"],
+        "approvals": [
+          {"role": "business", "by": "business-owner"},
+          {"role": "data", "by": "data-lead"}
+        ],
+        "required_evidence": ["reconciliation"],
+        "evidence": [
+          {
+            "type": "reconciliation",
+            "ref": "eac://dkharlanau/reconciliation-as-code/reconciliation/customer-country-post-load/run/production-load-01"
+          }
+        ]
+      }
+    },
+    {
+      "id": "open-interfaces",
+      "owner": "integration",
+      "workstream": "integration",
+      "status": "running",
+      "duration_minutes": 20,
+      "actual_start": "2026-08-30T22:15:00Z",
+      "depends_on": ["reconcile-customers"]
+    }
+  ]
+}
