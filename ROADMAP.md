@@ -18,17 +18,19 @@
 - delay propagation with originating vs inherited delay
 - forecasted cutover completion and schedule variance
 - snapshot diff for status, blockers, progress, critical path, and timing
+- explicit rollback/contingency branches with task/signal activation rules
+- validation and execution state for active rollback branches
 - unit tests and GitHub Actions workflow
 
-## Now — make execution recoverable and controllable
+## Now — make execution resumable and risk-aware
 
-1. Model rollback/contingency tasks and activation conditions.
-2. Persist execution snapshots so a cutover can resume safely.
-3. Add workstream/owner risk concentration metrics.
+1. Persist execution snapshots so a cutover can resume safely.
+2. Add workstream/owner risk concentration metrics.
+3. Emit stable cross-repository artifact refs for tasks/checkpoints/evidence.
 
 ## Next — control room
 
-- generate a concise go/no-go report
+- generate a concise go/no-go/rollback report
 - show blocker and delay concentration by owner/workstream
 - show critical-path and forecast movement visually
 - produce next-action recommendations from deterministic state
@@ -47,4 +49,4 @@
 
 During a real cutover the model should answer, from the current state alone:
 
-> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, and what approvals/evidence are still missing?
+> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
