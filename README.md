@@ -1,10 +1,10 @@
 # Cutover Graph
 
-Model and execute cutover dependencies, live readiness, blockers, timing, checkpoints, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
+Model and execute cutover dependencies, live readiness, blockers, timing, checkpoints, contingency branches, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
 
 ## Why this exists
 
-Cutovers are typically coordinated through large spreadsheets, calls, and manually maintained status columns. Dependencies are implicit, blockers become visible late, and the rationale for a go/no-go decision is difficult to reconstruct.
+Cutovers are typically coordinated through large spreadsheets, calls, and manually maintained status columns. Dependencies are implicit, blockers become visible late, and the rationale for a go/no-go or rollback decision is difficult to reconstruct.
 
 Cutover Graph turns the plan into machine-readable state that can answer both planning and live-execution questions.
 
@@ -26,6 +26,9 @@ Cutover Graph turns the plan into machine-readable state that can answer both pl
 - propagate delays through dependencies and identify originating vs upstream delay
 - forecast cutover completion and completion variance
 - compare two snapshots: status movement, blocker movement, progress, critical path, and schedule variance
+- model rollback/contingency as explicit alternative execution branches
+- activate contingency branches only from explicit task-status or signal conditions
+- validate rollback branch dependencies/cycles and calculate branch `executable_now`, blockers, waves, and completion
 - emit JSON suitable for CI, dashboards, and agents
 
 This repository covers the useful core of the earlier `cutover-orchestrator` idea; a second thin repository is not needed.
@@ -40,10 +43,11 @@ python cutover_graph.py examples/checkpoint-cutover.json plan
 python cutover_gate.py examples/checkpoint-cutover.json examples/checkpoint-policy.json
 python cutover_timing.py examples/timed-cutover-before.json
 python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
+python cutover_contingency.py examples/contingency-cutover.json
 python -m unittest discover -s tests -v
 ```
 
-The planner reports `executable_now`, live blockers, checkpoint status, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. Time-aware planning separates an originating delay from delay inherited through dependencies.
+The planner reports `executable_now`, live blockers, checkpoint status, progress, theoretical waves, and critical path. The readiness gate evaluates explicit go/no-go criteria. Time-aware planning separates an originating delay from delay inherited through dependencies. The contingency engine evaluates whether an alternative rollback branch is active and what can execute inside it now.
 
 ## Checkpoint model
 
@@ -68,7 +72,37 @@ A checkpoint belongs to a task and can require approvals and evidence before the
 }
 ```
 
-If one required approval or evidence type is missing, downstream tasks remain blocked even when `reconcile-customers.status` is `done`. Duplicate records are reported and do not satisfy distinct requirements.
+If one required approval or evidence type is missing, downstream tasks remain blocked even when `reconcile-customers.status` is `done`.
+
+## Contingency model
+
+Rollback is an explicit alternative branch, not prose attached to a task:
+
+```json
+{
+  "signals": {"abort_go_live": false},
+  "tasks": [
+    {"id": "load-customers", "status": "failed"}
+  ],
+  "contingencies": [
+    {
+      "id": "rollback-customer-load",
+      "mode": "any",
+      "activate_when": [
+        {"task": "load-customers", "status_in": ["failed"]},
+        {"signal": "abort_go_live", "equals": true}
+      ],
+      "tasks": [
+        {"id": "close-inbound", "status": "done", "depends_on": []},
+        {"id": "restore-snapshot", "status": "pending", "depends_on": ["close-inbound"]},
+        {"id": "reconcile-restored-state", "status": "pending", "depends_on": ["restore-snapshot"]}
+      ]
+    }
+  ]
+}
+```
+
+A contingency is inactive until its activation rule passes. When active, its branch is evaluated as a separate deterministic DAG with its own executable tasks and blockers. This prevents rollback instructions from silently becoming part of the normal forward path.
 
 ## Time-aware plan model
 
@@ -107,18 +141,18 @@ For a running task, optional `remaining_minutes` can provide a more explicit for
 
 ## Product direction
 
-1. Rollback/contingency tasks and activation conditions.
-2. Persisted/resumable execution snapshots.
-3. Workstream/owner risk concentration metrics.
-4. Browser control-room view using the shared graph explorer.
-5. Reconciliation-as-Code checks as cutover gates.
-6. Project Evidence Graph output for auditable go-live evidence.
-7. Controlled command hooks behind explicit approval envelopes.
+1. Persisted/resumable execution snapshots.
+2. Workstream/owner risk concentration metrics.
+3. Browser control-room view using the shared graph explorer.
+4. Reconciliation-as-Code checks as cutover gates.
+5. Project Evidence Graph output for auditable go-live evidence.
+6. Controlled command hooks behind explicit approval envelopes.
 
 ## Design principles
 
 - deterministic planning before automation
 - explicit policy rather than hidden go/no-go logic
+- rollback as an explicit alternative branch
 - checkpoint-aware completion
 - timezone-aware schedule math
 - versionable state
@@ -141,4 +175,4 @@ For a running task, optional `remaining_minutes` can provide a more explicit for
 
 ## Status
 
-**MVP / active development.** Planning, checkpoint-aware execution, live readiness, time-aware forecasting, delay propagation, policy gates, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
+**MVP / active development.** Planning, checkpoint-aware execution, live readiness, time-aware forecasting, delay propagation, policy gates, explicit rollback branches, evidence checks, snapshot comparison, examples, tests, and CI workflow are implemented.
