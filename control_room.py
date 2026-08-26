@@ -117,11 +117,15 @@ def render_markdown(report: dict[str, Any], title: str = "Cutover Control Room")
     ]
 
     if transition is not None:
+        state_changes = [
+            str(item["task"]) + ":" + str(item["from"]) + "→" + str(item["to"])
+            for item in transition["state_changes"]
+        ]
         lines += [
             "## Snapshot transition",
             "",
             f"- Valid: {'yes' if transition['valid'] else 'no'}",
-            f"- State changes: {_list([f\"{item['task']}:{item['from']}→{item['to']}\" for item in transition['state_changes']])}",
+            f"- State changes: {_list(state_changes)}",
             f"- Findings: {_list([item['type'] for item in transition['findings']])}",
             "",
         ]
