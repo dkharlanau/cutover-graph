@@ -1,0 +1,36 @@
+{
+  "tasks": [
+    {
+      "id": "load-customers",
+      "owner": "mdg",
+      "duration_minutes": 90,
+      "status": "done",
+      "depends_on": []
+    },
+    {
+      "id": "reconcile-customers",
+      "owner": "data",
+      "duration_minutes": 45,
+      "status": "done",
+      "depends_on": ["load-customers"],
+      "checkpoint": {
+        "required_approvals": ["business", "data"],
+        "approvals": [
+          {"role": "business", "by": "business-owner", "at": "2026-08-30T23:05:00Z"},
+          {"role": "data", "by": "data-lead", "at": "2026-08-30T23:06:00Z"}
+        ],
+        "required_evidence": ["reconciliation"],
+        "evidence": [
+          {"type": "reconciliation", "ref": "recon/customer-final.json"}
+        ]
+      }
+    },
+    {
+      "id": "open-interfaces",
+      "owner": "integration",
+      "duration_minutes": 20,
+      "status": "pending",
+      "depends_on": ["reconcile-customers"]
+    }
+  ]
+}
