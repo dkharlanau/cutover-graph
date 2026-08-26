@@ -1,6 +1,6 @@
 # Cutover Graph
 
-Model and execute cutover dependencies, waves, blockers, critical paths, controls, and evidence as a versionable graph.
+Model and execute cutover dependencies, waves, blockers, critical paths, controls, evidence, and go/no-go policies as a versionable graph.
 
 ## Why this exists
 
@@ -10,7 +10,7 @@ Cutover Graph turns the plan into a machine-readable dependency model that can b
 
 ## Current MVP
 
-The repository now contains a zero-dependency Python planning engine with:
+The repository contains a zero-dependency Python planning and readiness engine with:
 
 - task and dependency validation
 - missing-dependency detection
@@ -18,6 +18,8 @@ The repository now contains a zero-dependency Python planning engine with:
 - deterministic execution waves
 - duration-based critical path calculation
 - runtime blocker detection from task status
+- machine-readable readiness/go-no-go policy gates
+- owner and completed-task evidence checks
 - JSON reporting suitable for CI, dashboards, and agents
 - GitHub Actions validation
 
@@ -28,12 +30,13 @@ This repo is deliberately becoming the executable cutover core, so a separate `c
 ```bash
 python cutover_graph.py examples/customer-cutover.json validate
 python cutover_graph.py examples/customer-cutover.json plan
+python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
 python -m unittest discover -s tests -v
 ```
 
-Example output includes the ordered execution waves, critical path duration, and tasks currently blocked by unfinished dependencies.
+The planner reports execution waves, critical path duration, and active blockers. The readiness gate then evaluates whether the plan satisfies explicit go/no-go criteria.
 
-## Model
+## Plan model
 
 ```json
 {
@@ -56,20 +59,32 @@ Example output includes the ordered execution waves, critical path duration, and
 }
 ```
 
+## Readiness policy
+
+```json
+{
+  "require_valid_plan": true,
+  "require_owners": true,
+  "required_complete": ["freeze-config", "load-reference-data"],
+  "require_evidence_for_completed": true,
+  "max_blocked_tasks": 3,
+  "max_critical_path_minutes": 240
+}
+```
+
+This makes go/no-go criteria reviewable and versionable instead of leaving them only in meetings or status spreadsheets.
+
 ## Product direction
 
-The next product layers are:
-
-1. readiness gates and go/no-go policies
-2. checkpoints, approvals, and evidence references
-3. rollback tasks and contingency branches
-4. planned vs actual timestamps and delay propagation
-5. resumable execution state
-6. command hooks/webhooks for automation
-7. HTML/GitHub Pages live cutover view
-8. integration with Reconciliation as Code for post-load controls
-9. integration with Project Evidence Graph for auditable go-live evidence
-10. agent-readable recommendations: next executable task, active blockers, and risk concentration
+1. planned vs actual timestamps and delay propagation
+2. rollback tasks and contingency branches
+3. resumable execution state
+4. checkpoints and multi-stage approvals
+5. command hooks/webhooks for automation
+6. HTML/GitHub Pages live cutover view
+7. integration with Reconciliation as Code for post-load controls
+8. integration with Project Evidence Graph for auditable go-live evidence
+9. agent-readable recommendations: next executable task, active blockers, and risk concentration
 
 ## Design principles
 
@@ -96,4 +111,4 @@ The next product layers are:
 
 ## Status
 
-**MVP / active development.** Validation, dependency analysis, waves, blockers, critical path calculation, examples, tests, and CI are implemented.
+**MVP / active development.** Validation, dependency analysis, waves, blockers, critical path calculation, readiness policies, evidence checks, examples, tests, and CI are implemented.
