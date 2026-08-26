@@ -38,3 +38,4 @@ jobs:
       - run: python cutover_snapshot.py create examples/snapshots/after.json --output /tmp/snapshot-after.json
       - run: python cutover_snapshot.py validate /tmp/snapshot-after.json
       - run: python cutover_snapshot.py transition /tmp/snapshot-before.json /tmp/snapshot-after.json
+      - run: python cutover_risk.py examples/snapshots/after.json
