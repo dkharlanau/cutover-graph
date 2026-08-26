@@ -8,6 +8,7 @@ import json
 from typing import Any
 
 from cutover_graph import _task_index, blockers, critical_path, executable_now, load_plan, progress
+from cutover_timing import timing_report
 
 
 def _blocker_map(plan: dict[str, Any]) -> dict[str, tuple[str, ...]]:
@@ -47,6 +48,38 @@ def compare(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
     after_cp = critical_path(after)
     before_progress = progress(before)
     after_progress = progress(after)
+    before_timing = timing_report(before)
+    after_timing = timing_report(after)
+
+    timing: dict[str, Any] = {
+        "before_valid": before_timing["timing_valid"],
+        "after_valid": after_timing["timing_valid"],
+    }
+    if before_timing["timing_valid"] and after_timing["timing_valid"]:
+        timing.update({
+            "baseline_completion": {
+                "before": before_timing["baseline_completion"],
+                "after": after_timing["baseline_completion"],
+            },
+            "forecast_completion": {
+                "before": before_timing["forecast_completion"],
+                "after": after_timing["forecast_completion"],
+            },
+            "completion_variance_minutes": {
+                "before": before_timing["completion_variance_minutes"],
+                "after": after_timing["completion_variance_minutes"],
+                "delta": after_timing["completion_variance_minutes"] - before_timing["completion_variance_minutes"],
+            },
+            "origin_delays": {
+                "before": before_timing["origin_delays"],
+                "after": after_timing["origin_delays"],
+            },
+        })
+    else:
+        timing["errors"] = {
+            "before": before_timing.get("errors", []),
+            "after": after_timing.get("errors", []),
+        }
 
     return {
         "added_tasks": sorted(after_ids - before_ids),
@@ -72,6 +105,7 @@ def compare(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
             else after_cp["duration_minutes"] - before_cp["duration_minutes"],
             "path_changed": before_cp["tasks"] != after_cp["tasks"],
         },
+        "timing": timing,
     }
 
 
