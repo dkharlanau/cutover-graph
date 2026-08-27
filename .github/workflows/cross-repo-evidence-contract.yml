@@ -1,0 +1,105 @@
+name: Cross-repo evidence contract
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/cross-repo-evidence-contract.yml
+      - docs/portfolio-evidence-chain.md
+      - external_evidence.py
+      - examples/checkpoint-cutover.json
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  mapping-reconciliation-cutover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Cutover Graph
+        uses: actions/checkout@v4
+
+      - name: Checkout current Reconciliation as Code
+        uses: actions/checkout@v4
+        with:
+          repository: dkharlanau/reconciliation-as-code
+          ref: main
+          path: _deps/reconciliation-as-code
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install current Reconciliation as Code
+        run: python -m pip install ./_deps/reconciliation-as-code
+
+      - name: Generate live reconciliation evidence from Mapping as Code artifact
+        run: |
+          rac validate _deps/reconciliation-as-code/examples/mapping-as-code-bridge/reconciliation.yaml
+          rac run _deps/reconciliation-as-code/examples/mapping-as-code-bridge/reconciliation.yaml \
+            --evidence /tmp/rac-evidence.json \
+            --report /tmp/rac-evidence.md
+
+      - name: Assert Mapping as Code provenance survived the reconciliation run
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          evidence = json.loads(Path('/tmp/rac-evidence.json').read_text(encoding='utf-8'))
+          assert evidence['status'] == 'passed'
+          mapping = evidence['inputs']['mapping:customer-country']
+          assert mapping['mapping_id'] == 'country-iso2-to-iso3'
+          assert mapping['fields'] == ['customer-country']
+          assert len(mapping['sha256']) == 64
+          assert evidence['configuration_sha256']
+          PY
+
+      - name: Bind the generated RAC run to a real Cutover checkpoint
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from external_evidence import reconciliation_entry
+
+          entry = reconciliation_entry('/tmp/rac-evidence.json')
+          plan = json.loads(Path('examples/checkpoint-cutover.json').read_text(encoding='utf-8'))
+          plan['tasks'][1]['checkpoint']['evidence'][0]['ref'] = entry['ref']
+          Path('/tmp/live-cutover.json').write_text(json.dumps(plan, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Build verified external evidence registry
+        run: python external_evidence.py build /tmp/registry.json /tmp/rac-evidence.json > /tmp/registry-output.json
+
+      - name: Verify Cutover execution against the live registry
+        run: python external_evidence.py check /tmp/live-cutover.json /tmp/registry.json > /tmp/verified-cutover.json
+
+      - name: Assert evidence identity and downstream release
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          evidence_bytes = Path('/tmp/rac-evidence.json').read_bytes()
+          evidence = json.loads(evidence_bytes)
+          registry = json.loads(Path('/tmp/registry.json').read_text(encoding='utf-8'))
+          verified = json.loads(Path('/tmp/verified-cutover.json').read_text(encoding='utf-8'))
+
+          assert registry['diagnostics']['valid'] is True
+          assert len(registry['entries']) == 1
+          entry = registry['entries'][0]
+          assert entry['status'] == 'passed'
+          assert entry['document_sha256'] == hashlib.sha256(evidence_bytes).hexdigest()
+          assert entry['configuration_sha256'] == evidence['configuration_sha256']
+
+          assert verified['passed'] is True
+          assert 'reconcile-customers' in verified['verified_completed_tasks']
+          assert 'open-interfaces' in verified['verified_executable_now']
+          checkpoint = next(item for item in verified['checkpoint_verifications'] if item['task'] == 'reconcile-customers')
+          assert checkpoint['passed'] is True
+          assert checkpoint['verifications'][0]['document_sha256'] == entry['document_sha256']
+          PY
