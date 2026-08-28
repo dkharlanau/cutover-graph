@@ -39,6 +39,24 @@ class CutoverArtifactTests(unittest.TestCase):
             ]
         }
 
+    def _registry(self, status: str = "passed") -> dict:
+        return {
+            "schema_version": "0.1",
+            "entries": [
+                {
+                    "ref": self.reconciliation_ref,
+                    "kind": "reconciliation-as-code-run",
+                    "status": status,
+                    "observed_at": "2026-08-28T05:00:00Z",
+                    "document_sha256": "d" * 64,
+                    "configuration_sha256": "c" * 64,
+                    "source_files": ["evidence.json"],
+                    "summary": {},
+                }
+            ],
+            "diagnostics": {"valid": True, "errors": [], "duplicate_refs": [], "conflicts": []},
+        }
+
     def test_main_task_refs_and_dependencies_are_stable(self):
         index = build_index(self.plan)
         self.assertTrue(index["valid"])
@@ -47,18 +65,61 @@ class CutoverArtifactTests(unittest.TestCase):
         self.assertEqual(tasks["reconcile-customers"]["depends_on_refs"], ["eac://dkharlanau/cutover-graph/task/load-customers"])
         self.assertEqual(tasks["open-interfaces"]["depends_on_refs"], ["eac://dkharlanau/cutover-graph/task/reconcile-customers"])
 
-    def test_checkpoint_ref_state_and_reconciliation_ref_survive(self):
+    def test_external_checkpoint_without_registry_fails_closed(self):
         index = build_index(self.plan)
         task = next(item for item in index["tasks"] if item["id"] == "reconcile-customers")
         checkpoint = task["checkpoint"]
-        self.assertTrue(checkpoint["passed"])
+        self.assertTrue(checkpoint["native_passed"])
+        self.assertFalse(checkpoint["passed"])
+        self.assertFalse(task["complete"])
+        self.assertEqual(checkpoint["verification_mode"], "unverified_external")
+        self.assertFalse(checkpoint["external_evidence_passed"])
+        self.assertEqual(checkpoint["verifications"][0]["reason"], "verification_registry_not_supplied")
         self.assertEqual(checkpoint["artifact_ref"], "eac://dkharlanau/cutover-graph/checkpoint/reconcile-customers")
         self.assertEqual(checkpoint["evidence_refs"], [self.reconciliation_ref])
+        self.assertFalse(index["assurance"]["passed"])
+
+    def test_passed_registry_promotes_external_checkpoint_to_verified_assurance(self):
+        index = build_index(self.plan, self._registry("passed"))
+        task = next(item for item in index["tasks"] if item["id"] == "reconcile-customers")
+        checkpoint = task["checkpoint"]
+        self.assertTrue(checkpoint["native_passed"])
+        self.assertTrue(checkpoint["passed"])
         self.assertTrue(task["complete"])
+        self.assertEqual(checkpoint["verification_mode"], "external_registry")
+        self.assertTrue(checkpoint["external_evidence_passed"])
+        verification = checkpoint["verifications"][0]
+        self.assertTrue(verification["verified"])
+        self.assertEqual(verification["document_sha256"], "d" * 64)
+        self.assertEqual(verification["configuration_sha256"], "c" * 64)
+        self.assertTrue(index["assurance"]["passed"])
+        self.assertEqual(index["assurance"]["external_checkpoints_verified"], 1)
+
+    def test_failed_registry_keeps_native_state_but_blocks_assurance(self):
+        index = build_index(self.plan, self._registry("failed"))
+        task = next(item for item in index["tasks"] if item["id"] == "reconcile-customers")
+        checkpoint = task["checkpoint"]
+        self.assertTrue(checkpoint["native_passed"])
+        self.assertFalse(checkpoint["passed"])
+        self.assertFalse(task["complete"])
+        self.assertEqual(checkpoint["verification_mode"], "external_registry")
+        self.assertEqual(checkpoint["verifications"][0]["reason"], "external_evidence_failed")
+        self.assertFalse(index["assurance"]["passed"])
+
+    def test_local_only_checkpoint_keeps_native_semantics(self):
+        checkpoint = self.plan["tasks"][1]["checkpoint"]
+        checkpoint["evidence"] = [{"type": "reconciliation", "ref": "local/reconciliation.json"}]
+        index = build_index(self.plan)
+        task = next(item for item in index["tasks"] if item["id"] == "reconcile-customers")
+        self.assertTrue(task["checkpoint"]["passed"])
+        self.assertTrue(task["complete"])
+        self.assertEqual(task["checkpoint"]["verification_mode"], "local_only")
+        self.assertEqual(index["assurance"]["external_checkpoints"], 0)
+        self.assertTrue(index["assurance"]["passed"])
 
     def test_incomplete_checkpoint_makes_task_incomplete(self):
         self.plan["tasks"][1]["checkpoint"]["approvals"] = []
-        index = build_index(self.plan)
+        index = build_index(self.plan, self._registry())
         task = next(item for item in index["tasks"] if item["id"] == "reconcile-customers")
         self.assertFalse(task["complete"])
         self.assertFalse(task["checkpoint"]["passed"])

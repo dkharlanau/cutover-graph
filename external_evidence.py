@@ -169,6 +169,7 @@ def verify_checkpoint(task: dict[str, Any], registry: dict[str, Any]) -> dict[st
                 "reason": "missing_registry_entry",
                 "status": None,
                 "document_sha256": None,
+                "configuration_sha256": None,
                 "observed_at": None,
             })
             continue
@@ -179,6 +180,7 @@ def verify_checkpoint(task: dict[str, Any], registry: dict[str, Any]) -> dict[st
             "reason": "passed" if accepted else "external_evidence_failed",
             "status": entry.get("status"),
             "document_sha256": entry.get("document_sha256"),
+            "configuration_sha256": entry.get("configuration_sha256"),
             "observed_at": entry.get("observed_at"),
             "kind": entry.get("kind"),
         })
