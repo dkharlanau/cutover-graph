@@ -6,6 +6,7 @@ on:
       - .github/workflows/cross-repo-evidence-contract.yml
       - docs/portfolio-evidence-chain.md
       - external_evidence.py
+      - cutover_artifacts.py
       - examples/checkpoint-cutover.json
   workflow_dispatch:
   schedule:
@@ -77,7 +78,13 @@ jobs:
       - name: Verify Cutover execution against the live registry
         run: python external_evidence.py check /tmp/live-cutover.json /tmp/registry.json > /tmp/verified-cutover.json
 
-      - name: Assert evidence identity and downstream release
+      - name: Prove artifact export fails closed without the registry
+        run: python cutover_artifacts.py /tmp/live-cutover.json --output /tmp/unverified-artifacts.json
+
+      - name: Export verified Cutover artifacts for downstream assurance consumers
+        run: python cutover_artifacts.py /tmp/live-cutover.json --registry /tmp/registry.json --output /tmp/verified-artifacts.json
+
+      - name: Assert evidence identity, downstream release and assurance export
         run: |
           python - <<'PY'
           import hashlib
@@ -88,6 +95,8 @@ jobs:
           evidence = json.loads(evidence_bytes)
           registry = json.loads(Path('/tmp/registry.json').read_text(encoding='utf-8'))
           verified = json.loads(Path('/tmp/verified-cutover.json').read_text(encoding='utf-8'))
+          unverified_index = json.loads(Path('/tmp/unverified-artifacts.json').read_text(encoding='utf-8'))
+          verified_index = json.loads(Path('/tmp/verified-artifacts.json').read_text(encoding='utf-8'))
 
           assert registry['diagnostics']['valid'] is True
           assert len(registry['entries']) == 1
@@ -102,4 +111,22 @@ jobs:
           checkpoint = next(item for item in verified['checkpoint_verifications'] if item['task'] == 'reconcile-customers')
           assert checkpoint['passed'] is True
           assert checkpoint['verifications'][0]['document_sha256'] == entry['document_sha256']
+          assert checkpoint['verifications'][0]['configuration_sha256'] == entry['configuration_sha256']
+
+          raw_task = next(item for item in unverified_index['tasks'] if item['id'] == 'reconcile-customers')
+          assert raw_task['checkpoint']['native_passed'] is True
+          assert raw_task['checkpoint']['passed'] is False
+          assert raw_task['checkpoint']['verification_mode'] == 'unverified_external'
+          assert raw_task['complete'] is False
+          assert unverified_index['assurance']['passed'] is False
+
+          assured_task = next(item for item in verified_index['tasks'] if item['id'] == 'reconcile-customers')
+          assured_checkpoint = assured_task['checkpoint']
+          assert assured_checkpoint['passed'] is True
+          assert assured_checkpoint['verification_mode'] == 'external_registry'
+          assert assured_checkpoint['verifications'][0]['document_sha256'] == entry['document_sha256']
+          assert assured_checkpoint['verifications'][0]['configuration_sha256'] == entry['configuration_sha256']
+          assert assured_task['complete'] is True
+          assert verified_index['assurance']['external_checkpoints_verified'] == 1
+          assert verified_index['assurance']['passed'] is True
           PY
