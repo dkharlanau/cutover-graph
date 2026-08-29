@@ -1,6 +1,6 @@
 # Roadmap
 
-## Done — executable MVP
+## Done — deterministic execution core
 
 - canonical cutover task/dependency model
 - duplicate and missing-dependency validation
@@ -32,28 +32,40 @@
 - explicit missing/unknown risk and unassigned owner/workstream buckets
 - unit tests and GitHub Actions workflow
 
-## Now — build the control-room decision surface
+## Done — control-room decision surface
 
-1. Generate one concise control-room report from current plan + previous trusted snapshot.
-2. Combine legal transition, executable-now, blockers/checkpoints, timing forecast, contingency state, and risk concentration.
-3. Expose machine JSON plus Markdown/HTML without losing the underlying deterministic signals.
+- one consolidated read-only control-room report from current plan and optional previous trusted snapshot
+- explicit operating modes: `planned_execution`, `readiness_hold`, `contingency_active`, `complete`, `invalid_state`
+- legal transition findings, executable-now state, blockers/checkpoints, timing forecast, contingency state and risk concentration in one report
+- deterministic JSON, Markdown and standalone HTML renderers
+- verified control-room overlay that can hold execution when required external evidence is unresolved
+- Reconciliation-as-Code evidence registry with stable `eac://` run references
+- external evidence document SHA-256, status and observed timestamp retained in verification output
+- tests for control-room modes, renderers and external-evidence verification
 
-## Next — ecosystem execution controls
+## Now — distribution and public proof
 
-- consume Reconciliation-as-Code result status directly as a checkpoint control without copying evidence content
-- emit cutover evidence fragments for Project Evidence Graph through the artifact index boundary
-- feed the shared enterprise graph explorer/control-room view
-- add next-action recommendations from deterministic state
+1. Put the current script-oriented surface behind one installable `cutover-graph` CLI while preserving the existing deterministic modules.
+2. Make the generated control-room report—not a generic architecture diagram—the primary public proof case.
+3. Provide one complete synthetic rehearsal path: baseline plan → trusted snapshot → changed live state → verified reconciliation evidence → control-room decision.
+4. Add release/version metadata so a user can depend on a known tool version rather than a repository checkout.
 
-## Later — automation boundary
+## Next — ecosystem assurance
+
+- emit Project Evidence Graph assurance fragments from trusted snapshots, checkpoint verification and go/no-go decisions
+- expose a stable consumer contract for control-room/current-state output
+- add deterministic next-action recommendations that show the rule/evidence behind every recommendation
+- strengthen cross-repository contract tests around version compatibility rather than repository-local assumptions
+
+## Later — controlled automation boundary
 
 - controlled command hooks for executable tasks
-- approval envelope before state-changing actions
-- external status adapters for ticketing/monitoring systems
+- approval envelope before any state-changing action
+- explicit adapters for ticketing/monitoring systems with authority and freshness metadata
 - signed/attested snapshot and evidence-pack manifests
 
 ## Product test
 
-During a real cutover the model should answer, from the current state alone:
+During a real cutover the model should answer, from the current trusted state alone:
 
-> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, what changed since the previous trusted snapshot, did the state transition remain legal, where is operational risk concentrated, and if forward execution must stop, which rollback branch is justified and what can execute in it now?
+> What can run now, what gate is still blocking go-live, which task caused the delay, what completion is now forecast, what changed since the previous trusted snapshot, did the state transition remain legal, where is operational risk concentrated, is required external evidence actually verified, and—if forward execution must stop—which rollback branch is justified and what can execute in it now?
