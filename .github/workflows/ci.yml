@@ -20,24 +20,42 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m unittest discover -s tests -v
-      - run: python cutover_graph.py examples/customer-cutover.json validate
-      - run: python cutover_graph.py examples/customer-cutover.json plan
-      - run: python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
-      - run: python cutover_graph.py examples/checkpoint-cutover.json plan
-      - run: python cutover_gate.py examples/checkpoint-cutover.json examples/checkpoint-policy.json
-      - run: python cutover_artifacts.py examples/checkpoint-cutover.json --output /tmp/cutover-artifacts.json
-      - run: test -s /tmp/cutover-artifacts.json
-      - run: python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
-      - run: python cutover_timing.py examples/timed-cutover-before.json
-      - run: python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
-      - run: python cutover_contingency.py examples/contingency-cutover.json
-      - run: python cutover_artifacts.py examples/contingency-cutover.json --output /tmp/contingency-artifacts.json
-      - run: python cutover_snapshot.py create examples/snapshots/before.json --output /tmp/snapshot-before.json
-      - run: python cutover_snapshot.py validate /tmp/snapshot-before.json
-      - run: python cutover_snapshot.py create examples/snapshots/after.json --output /tmp/snapshot-after.json
-      - run: python cutover_snapshot.py validate /tmp/snapshot-after.json
-      - run: python cutover_snapshot.py transition /tmp/snapshot-before.json /tmp/snapshot-after.json
-      - run: python cutover_risk.py examples/snapshots/after.json
-      - run: python control_room.py examples/snapshots/after.json --previous-snapshot /tmp/snapshot-before.json --json-output /tmp/control-room.json --markdown /tmp/control-room.md --html /tmp/control-room.html
-      - run: test -s /tmp/control-room.json && test -s /tmp/control-room.md && test -s /tmp/control-room.html
+      - name: Install package
+        run: python -m pip install .
+      - name: Test suite
+        run: python -m unittest discover -s tests -v
+      - name: Installed CLI smoke tests
+        run: |
+          cutover-graph --help
+          cutover-graph validate examples/customer-cutover.json
+          cutover-graph plan examples/customer-cutover.json
+          cutover-graph control-room examples/snapshots/after.json \
+            --observed-at 2026-08-30T23:00:00Z \
+            --json-output /tmp/installed-control-room.json
+          test -s /tmp/installed-control-room.json
+      - name: Backwards-compatible module workflows
+        run: |
+          python cutover_graph.py examples/customer-cutover.json validate
+          python cutover_graph.py examples/customer-cutover.json plan
+          python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
+          python cutover_graph.py examples/checkpoint-cutover.json plan
+          python cutover_gate.py examples/checkpoint-cutover.json examples/checkpoint-policy.json
+          python cutover_artifacts.py examples/checkpoint-cutover.json --output /tmp/cutover-artifacts.json
+          test -s /tmp/cutover-artifacts.json
+          python cutover_diff.py examples/customer-cutover.json examples/customer-cutover-after.json
+          python cutover_timing.py examples/timed-cutover-before.json
+          python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
+          python cutover_contingency.py examples/contingency-cutover.json
+          python cutover_artifacts.py examples/contingency-cutover.json --output /tmp/contingency-artifacts.json
+          python cutover_snapshot.py create examples/snapshots/before.json --output /tmp/snapshot-before.json
+          python cutover_snapshot.py validate /tmp/snapshot-before.json
+          python cutover_snapshot.py create examples/snapshots/after.json --output /tmp/snapshot-after.json
+          python cutover_snapshot.py validate /tmp/snapshot-after.json
+          python cutover_snapshot.py transition /tmp/snapshot-before.json /tmp/snapshot-after.json
+          python cutover_risk.py examples/snapshots/after.json
+          python control_room.py examples/snapshots/after.json \
+            --previous-snapshot /tmp/snapshot-before.json \
+            --json-output /tmp/control-room.json \
+            --markdown /tmp/control-room.md \
+            --html /tmp/control-room.html
+          test -s /tmp/control-room.json && test -s /tmp/control-room.md && test -s /tmp/control-room.html
