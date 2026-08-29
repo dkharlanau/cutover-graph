@@ -12,10 +12,21 @@ During a cutover, the useful question is not just “what is green?” It is:
 
 The control-room layer consolidates those signals into JSON, Markdown or standalone HTML without hiding the deterministic evidence underneath.
 
-## Start with the control room
+## Try it
+
+Requires Python 3.10+.
 
 ```bash
-python control_room.py examples/timed-cutover-after.json \
+python -m pip install .
+
+cutover-graph validate examples/customer-cutover.json
+cutover-graph plan examples/customer-cutover.json
+```
+
+Render the control room:
+
+```bash
+cutover-graph control-room examples/timed-cutover-after.json \
   --observed-at 2026-08-30T22:30:00Z \
   --readiness-policy examples/readiness-policy.json \
   --json-output build/control-room.json \
@@ -23,10 +34,14 @@ python control_room.py examples/timed-cutover-after.json \
   --html build/control-room.html
 ```
 
-With a previous trusted snapshot, the same report also validates whether the observed state transition is legal:
+The installed command is a thin dispatcher over the same deterministic modules used by CI. Existing `python control_room.py ...` and other module-level workflows remain supported.
+
+## Trusted state transition
+
+With a previous trusted snapshot, the same control room validates whether the observed state transition is legal:
 
 ```bash
-python control_room.py examples/timed-cutover-after.json \
+cutover-graph control-room examples/timed-cutover-after.json \
   --previous-snapshot build/previous-snapshot.json \
   --transition-policy examples/transition-policy.json \
   --observed-at 2026-08-30T22:30:00Z \
@@ -52,10 +67,10 @@ A checkpoint may point to evidence owned by another product instead of copying t
 Build a local verification registry from retained reconciliation evidence, then render a verified control room:
 
 ```bash
-python external_evidence.py build build/evidence-registry.json \
+cutover-graph evidence build build/evidence-registry.json \
   path/to/reconciliation-evidence.json
 
-python control_room_verified.py examples/checkpoint-cutover.json \
+cutover-graph control-room-verified examples/checkpoint-cutover.json \
   --evidence-registry build/evidence-registry.json \
   --observed-at 2026-08-30T22:30:00Z \
   --html build/verified-control-room.html
@@ -104,21 +119,27 @@ External evidence is addressed through stable `eac://` references. A task is not
 - preserve stable `eac://` artifact references;
 - bind Reconciliation-as-Code run evidence through a verified registry;
 - retain source-document SHA-256 and external result status before accepting evidence;
-- expose machine-readable output suitable for CI, dashboards and agents.
+- expose machine-readable output suitable for CI, dashboards and agents;
+- install one `cutover-graph` command while retaining deterministic module boundaries.
 
-## Lower-level commands
+## Command surface
 
-The control room is composed from deterministic modules that remain usable independently:
-
-```bash
-python cutover_graph.py examples/customer-cutover.json validate
-python cutover_graph.py examples/customer-cutover.json plan
-python cutover_gate.py examples/customer-cutover.json examples/readiness-policy.json
-python cutover_timing.py examples/timed-cutover-before.json
-python cutover_diff.py examples/timed-cutover-before.json examples/timed-cutover-after.json
-python cutover_contingency.py examples/contingency-cutover.json
-python -m unittest discover -s tests -v
+```text
+cutover-graph validate
+cutover-graph plan
+cutover-graph control-room
+cutover-graph control-room-verified
+cutover-graph gate
+cutover-graph timing
+cutover-graph diff
+cutover-graph contingency
+cutover-graph snapshot
+cutover-graph risk
+cutover-graph artifacts
+cutover-graph evidence
 ```
+
+For module-level development and debugging the original scripts remain available. CI exercises both the installed command and those backwards-compatible paths.
 
 ## Checkpoint model
 
@@ -186,9 +207,9 @@ It does **not** become the semantic owner of the evidence it consumes. Reconcili
 
 ## Next product steps
 
-- package the current script-oriented surface behind one installable `cutover-graph` CLI without removing the deterministic module boundaries;
-- publish a generated control-room reference case as the primary product proof;
+- publish a generated control-room reference case as the primary public product proof;
 - emit Project Evidence Graph assurance fragments from trusted cutover snapshots and decisions;
+- add a stable machine-readable consumer contract for current control-room state;
 - add controlled command hooks only behind explicit approval envelopes;
 - add ticketing/monitoring status adapters only when their authority and freshness are explicit;
 - add signed/attested snapshot and evidence-pack manifests where audit requirements justify them.
@@ -220,4 +241,4 @@ Portfolio map: https://dkharlanau.github.io/products/
 
 ## Status
 
-**Executable MVP / active development.** The control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, examples, tests and CI are implemented. The main remaining product gap is distribution and a stronger generated public proof surface, not the deterministic execution core.
+**Executable MVP / active development.** The installed CLI, control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, examples, tests and CI are implemented. The main remaining gap is stronger public proof and downstream assurance integration, not distribution or the deterministic execution core.
