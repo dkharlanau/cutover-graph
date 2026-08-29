@@ -4,33 +4,56 @@ owner: dkharlanau
 visibility: public
 
 portfolio:
-  rank: 9
+  layer: execution
+  role: cutover-control-room
   utility_today: 9
   growth_potential: 9
   sap_proof: 9
   brand_value: 9
 
-status: planning
+status: executable-mvp
+version: 0.1.0
 
 implementation:
   repository_created: true
-  implementation_status: not-started
-  codex_fit: 5/5
+  implementation_status: executable
+  installable_package: true
+  console_command: cutover-graph
+  control_room: true
+  verified_external_evidence: true
+  test_suite: true
+  ci: true
   sap_access_required: false
 
+implemented_boundaries:
+  owns:
+    - cutover execution state
+    - dependencies and checkpoints
+    - readiness policy
+    - timing and forecast
+    - contingency state
+    - trusted snapshots
+    - operational risk concentration
+  references:
+    - reconciliation evidence
+    - project assurance evidence
+
 principles:
+  - deterministic-first
   - versionable
+  - evidence-backed
+  - checkpoint-aware
+  - explicit-contingency
   - portable
   - machine-readable
-  - deterministic-first
-  - visual
   - git-friendly
   - interoperable
 
 primary_users:
+  - cutover managers
   - SAP consultants
+  - migration leads
   - enterprise architects
   - data consultants
   - integration consultants
-  - business analysts
   - transformation teams
