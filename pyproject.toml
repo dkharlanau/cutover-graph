@@ -31,7 +31,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://dkharlanau.github.io/cutover-graph/"
+Homepage = "https://github.com/dkharlanau/cutover-graph"
 Repository = "https://github.com/dkharlanau/cutover-graph"
 Issues = "https://github.com/dkharlanau/cutover-graph/issues"
 Portfolio = "https://dkharlanau.github.io/products/"
