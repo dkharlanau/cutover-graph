@@ -28,6 +28,17 @@ jobs:
           mkdir -p _site
           cp docs/product.html _site/index.html
           cp docs/agent-manifest.json _site/agent-manifest.json
+          mkdir -p _site/demo
+          python cutover_snapshot.py create examples/snapshots/before.json \
+            --output /tmp/cutover-snapshot-before.json
+          python control_room.py examples/snapshots/after.json \
+            --previous-snapshot /tmp/cutover-snapshot-before.json \
+            --observed-at 2026-08-30T23:00:00Z \
+            --readiness-policy examples/readiness-policy.json \
+            --json-output _site/demo/control-room.json \
+            --markdown _site/demo/control-room.md \
+            --html _site/demo/control-room.html \
+            --title "Synthetic customer cutover — live control room"
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

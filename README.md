@@ -12,6 +12,12 @@ During a cutover, the useful question is not just “what is green?” It is:
 
 The control-room layer consolidates those signals into JSON, Markdown or standalone HTML without hiding the deterministic evidence underneath.
 
+## Public reference
+
+The [project page](https://dkharlanau.github.io/cutover-graph/) explains the operating model. Its [generated control-room case](https://dkharlanau.github.io/cutover-graph/demo/control-room.html) is built from the repository's synthetic before/after snapshots on every documentation deployment. The same report is available as [JSON](https://dkharlanau.github.io/cutover-graph/demo/control-room.json) for machine consumers and [Markdown](https://dkharlanau.github.io/cutover-graph/demo/control-room.md) for review.
+
+The case is demonstration data, not evidence from a production cutover. The Pages workflow regenerates it through the same deterministic modules exercised by CI, so the public output cannot drift into a hand-maintained mock-up.
+
 ## Try it
 
 Requires Python 3.10+.
@@ -241,4 +247,4 @@ Portfolio map: https://dkharlanau.github.io/products/
 
 ## Status
 
-**Executable MVP / active development.** The installed CLI, control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, examples, tests and CI are implemented. The main remaining gap is stronger public proof and downstream assurance integration, not distribution or the deterministic execution core.
+**Executable MVP / active development.** The installed CLI, control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, generated public reference case, examples, tests and CI are implemented. The main remaining gap is downstream assurance integration and a full end-to-end rehearsal pack, not distribution or the deterministic execution core.

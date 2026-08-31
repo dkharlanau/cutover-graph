@@ -43,12 +43,18 @@
 - external evidence document SHA-256, status and observed timestamp retained in verification output
 - tests for control-room modes, renderers and external-evidence verification
 
-## Now — distribution and public proof
+## Done — distribution and public reference
 
-1. Put the current script-oriented surface behind one installable `cutover-graph` CLI while preserving the existing deterministic modules.
-2. Make the generated control-room report—not a generic architecture diagram—the primary public proof case.
-3. Provide one complete synthetic rehearsal path: baseline plan → trusted snapshot → changed live state → verified reconciliation evidence → control-room decision.
-4. Add release/version metadata so a user can depend on a known tool version rather than a repository checkout.
+- one installable `cutover-graph` CLI with backwards-compatible module workflows
+- package version and repository metadata for a known tool release
+- generated public control-room HTML, JSON and Markdown built from synthetic trusted-state examples
+- GitHub Pages workflow that regenerates the reference case instead of publishing a hand-maintained mock-up
+
+## Now — complete rehearsal and consumer contract
+
+1. Provide one complete synthetic rehearsal path: baseline plan → trusted snapshot → changed live state → verified reconciliation evidence → control-room decision.
+2. Emit Project Evidence Graph assurance fragments from trusted cutover snapshots and decisions.
+3. Add a stable machine-readable consumer contract for current control-room state.
 
 ## Next — ecosystem assurance
 
