@@ -175,6 +175,26 @@ A checkpoint belongs to a task and can require approvals and evidence before the
 
 A raw `done` status does not release downstream work when a required checkpoint is incomplete or its external evidence cannot be verified.
 
+## Handoff to project assurance
+
+Cutover Graph exports the state it owns as a stable artifact index. Project Evidence Graph can import that index without parsing the cutover plan or copying its semantics:
+
+```bash
+cutover-graph evidence build build/evidence-registry.json \
+  examples/external-evidence/passed-reconciliation.json
+
+cutover-graph artifacts examples/checkpoint-cutover.json \
+  --registry build/evidence-registry.json \
+  --output build/cutover-artifacts.json
+
+project-evidence-graph import-cutover build/cutover-artifacts.json \
+  --output build/project-cutover-fragment.json
+
+project-evidence-graph analyze build/project-cutover-fragment.json
+```
+
+The boundary is fail-closed. An external checkpoint becomes positive downstream evidence only when the supplied registry verifies the referenced producer result. The same checkpoint exported without a registry remains traceable, but Project Evidence Graph imports it as an assurance gap rather than proof. See [the artifact-index handoff contract](docs/ARTIFACT-INDEX.md).
+
 ## Contingency model
 
 Rollback is an explicit alternative branch, not prose attached to a task:
@@ -213,8 +233,7 @@ It does **not** become the semantic owner of the evidence it consumes. Reconcili
 
 ## Next product steps
 
-- publish a generated control-room reference case as the primary public product proof;
-- emit Project Evidence Graph assurance fragments from trusted cutover snapshots and decisions;
+- provide one complete synthetic rehearsal pack from baseline snapshot through verified control-room decision;
 - add a stable machine-readable consumer contract for current control-room state;
 - add controlled command hooks only behind explicit approval envelopes;
 - add ticketing/monitoring status adapters only when their authority and freshness are explicit;
@@ -235,16 +254,21 @@ It does **not** become the semantic owner of the evidence it consumes. Reconcili
 
 ## Related projects
 
-- [Reconciliation as Code](https://github.com/dkharlanau/reconciliation-as-code)
-- [Project Evidence Graph](https://github.com/dkharlanau/project-evidence-graph)
-- [Mapping as Code](https://github.com/dkharlanau/mapping-as-code)
-- [Transformation Graph](https://github.com/dkharlanau/transformation-graph)
-- [Interface as Code](https://github.com/dkharlanau/interface-as-code)
-- [Process as Code](https://github.com/dkharlanau/process-as-code)
-- [Enterprise Change Graph](https://github.com/dkharlanau/enterprise-change-graph)
+- [Reconciliation as Code](https://github.com/dkharlanau/reconciliation-as-code) owns executable reconciliation checks and run evidence that can satisfy an external cutover checkpoint.
+- [Project Evidence Graph](https://github.com/dkharlanau/project-evidence-graph) consumes the Cutover artifact index and preserves verified checkpoints or unresolved assurance gaps in project-wide traceability.
+- [Transformation Graph](https://github.com/dkharlanau/transformation-graph) provides broader project traceability context; there is currently no direct Transformation Graph import in Cutover Graph.
+- [Enterprise Change Graph](https://github.com/dkharlanau/enterprise-change-graph) owns change-focused impact and regression analysis; Cutover Graph does not infer its propagation rules.
+- [Mapping as Code](https://github.com/dkharlanau/mapping-as-code), [Interface as Code](https://github.com/dkharlanau/interface-as-code), and [Process as Code](https://github.com/dkharlanau/process-as-code) remain the authoring homes for their domain contracts rather than inputs copied into the cutover model.
 
 Portfolio map: https://dkharlanau.github.io/products/
 
 ## Status
 
-**Executable MVP / active development.** The installed CLI, control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, generated public reference case, examples, tests and CI are implemented. The main remaining gap is downstream assurance integration and a full end-to-end rehearsal pack, not distribution or the deterministic execution core.
+**Executable MVP / active development.** The installed CLI, control room, checkpoint-aware execution, trusted snapshots and transition validation, live timing, risk concentration, readiness policies, explicit contingencies, verified Reconciliation-as-Code evidence bindings, fail-closed Project Evidence handoff, generated public reference case, examples, tests and CI are implemented. The main remaining gaps are a stable current-state consumer contract and a full end-to-end rehearsal pack, not distribution or the deterministic execution core.
+
+## About the author
+
+Created and maintained by **Dzmitryi Kharlanau**, an SAP consultant and system analyst working across enterprise architecture, data, integration, operations, and practical AI.
+
+- [Website and knowledge base](https://dkharlanau.github.io/)
+- [LinkedIn](https://www.linkedin.com/in/dkharlanau/)

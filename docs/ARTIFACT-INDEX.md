@@ -71,3 +71,22 @@ Each contingency branch and branch task receives its own stable ref. Activation 
 ## Validation
 
 The artifact index carries both normal Cutover Graph validation and contingency validation. `valid` is true only if both are valid. Invalid plans do not produce a trustworthy integration index.
+
+## Verified Project Evidence Graph handoff
+
+The repository includes a synthetic Reconciliation-as-Code result whose logical reference matches `examples/checkpoint-cutover.json`. This makes the positive handoff reproducible without inventing evidence:
+
+```bash
+cutover-graph evidence build build/evidence-registry.json \
+  examples/external-evidence/passed-reconciliation.json
+cutover-graph artifacts examples/checkpoint-cutover.json \
+  --registry build/evidence-registry.json \
+  --output build/cutover-artifacts.json
+project-evidence-graph import-cutover build/cutover-artifacts.json \
+  --output build/project-cutover-fragment.json
+project-evidence-graph analyze build/project-cutover-fragment.json
+```
+
+The resulting Cutover index has `assurance.passed: true`; the imported project fragment records `assurance_complete: true`. These fields mean the synthetic external checkpoint was verified against the supplied registry. They do not certify a production cutover.
+
+Omitting `--registry` is also a supported, deliberately negative handoff. The external reference remains present for traceability, but the checkpoint is not exported as verified evidence and the Project Evidence import reports an unverified external checkpoint.

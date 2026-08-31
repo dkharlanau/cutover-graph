@@ -49,16 +49,15 @@
 - package version and repository metadata for a known tool release
 - generated public control-room HTML, JSON and Markdown built from synthetic trusted-state examples
 - GitHub Pages workflow that regenerates the reference case instead of publishing a hand-maintained mock-up
+- verified Cutover artifact-index handoff consumed fail-closed by Project Evidence Graph
 
 ## Now — complete rehearsal and consumer contract
 
 1. Provide one complete synthetic rehearsal path: baseline plan → trusted snapshot → changed live state → verified reconciliation evidence → control-room decision.
-2. Emit Project Evidence Graph assurance fragments from trusted cutover snapshots and decisions.
-3. Add a stable machine-readable consumer contract for current control-room state.
+2. Add a stable machine-readable consumer contract for current control-room state.
 
 ## Next — ecosystem assurance
 
-- emit Project Evidence Graph assurance fragments from trusted snapshots, checkpoint verification and go/no-go decisions
 - expose a stable consumer contract for control-room/current-state output
 - add deterministic next-action recommendations that show the rule/evidence behind every recommendation
 - strengthen cross-repository contract tests around version compatibility rather than repository-local assumptions

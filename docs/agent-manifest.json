@@ -4,15 +4,16 @@
   "purpose": "Model and evaluate cutover dependencies, live readiness, timing, checkpoints, contingencies, evidence, and go/no-go policy.",
   "human_url": "https://dkharlanau.github.io/cutover-graph/",
   "repository": "https://github.com/dkharlanau/cutover-graph",
-  "boundaries": ["not an unrestricted production command executor", "do not infer missing approvals or evidence", "task status alone does not override checkpoints", "contingencies activate only from explicit conditions"],
-  "capabilities": ["validate cutover DAG", "calculate waves/critical path/executable-now", "detect blockers", "evaluate checkpoints", "forecast timing and propagated delay", "compare snapshots", "evaluate readiness policy", "activate/evaluate explicit contingency branches"],
+  "boundaries": ["not an unrestricted production command executor", "do not infer missing approvals or evidence", "task status alone does not override checkpoints", "external evidence references require registry verification before positive assurance", "contingencies activate only from explicit conditions"],
+  "capabilities": ["validate cutover DAG", "calculate waves/critical path/executable-now", "detect blockers", "evaluate checkpoints", "forecast timing and propagated delay", "compare snapshots", "evaluate readiness policy", "activate/evaluate explicit contingency branches", "export a stable fail-closed artifact index for project assurance"],
   "entrypoints": [
     {"type":"cli","command":"python cutover_graph.py <cutover.json> validate"},
     {"type":"cli","command":"python cutover_graph.py <cutover.json> plan"},
     {"type":"cli","command":"python cutover_gate.py <cutover.json> <policy.json>"},
     {"type":"cli","command":"python cutover_timing.py <cutover.json>"},
     {"type":"cli","command":"python cutover_diff.py <before.json> <after.json>"},
-    {"type":"cli","command":"python cutover_contingency.py <cutover.json>"}
+    {"type":"cli","command":"python cutover_contingency.py <cutover.json>"},
+    {"type":"cli","command":"cutover-graph artifacts <cutover.json> [--registry evidence-registry.json] --output <artifact-index.json>"}
   ],
   "safe_agent_loop": ["validate snapshot", "calculate executable-now/blockers/checkpoints", "recalculate timing", "evaluate explicit readiness policy", "check contingency activation conditions", "return decision inputs without fabricating approvals"],
   "related": [
