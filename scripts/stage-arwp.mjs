@@ -18,12 +18,29 @@ const href = new URL("ai/site-profile.json", profile.canonicalUrl).href;
 let html = fs.readFileSync(homepage, "utf8");
 const marker = "arwp-profile-discovery";
 const link = `<link id="${marker}" rel="describedby" type="application/json" href="${href}" title="Agent-Ready Web Profile">`;
-if (html.includes(`id="${marker}"`)) {
-  html = html.replace(/<link\s[^>]*id="arwp-profile-discovery"[^>]*>/i, link);
-} else {
-  if (!/<\/head>/i.test(html)) throw new Error("Public homepage has no closing head");
-  html = html.replace(/<\/head>/i, `${link}\n</head>`);
-}
+if (html.includes(`id="${marker}"`)) html = html.replace(/<link\s[^>]*id="arwp-profile-discovery"[^>]*>/i, link);
+else { if (!/<\/head>/i.test(html)) throw new Error("Public homepage has no closing head"); html = html.replace(/<\/head>/i, `${link}\n</head>`); }
+const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
+const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
+const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
+if (!title || !description || !canonical) throw new Error("Homepage must have title, meta description and canonical before Search appearance staging");
+if (canonical !== profile.canonicalUrl) throw new Error(`Homepage canonical differs from ARWP profile: ${canonical}`);
+const publicUrl = new URL(profile.canonicalUrl);
+const hostnameRoot = `${publicUrl.protocol}//${publicUrl.host}/`;
+const isHostnameRoot = publicUrl.pathname === "/";
+const hostSiteName = isHostnameRoot ? profile.name : (publicUrl.hostname === "dkharlanau.github.io" ? "Dzmitryi Kharlanau" : profile.name);
+const favicon = publicUrl.hostname === "dkharlanau.github.io" ? new URL("/assets/favicons/icon-192.png", hostnameRoot).href : new URL("/favicon.png", hostnameRoot).href;
+const escapeAttr = (value) => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const ensureMeta = (attribute, key, value) => { const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); const pattern = new RegExp(`<meta\\s+${attribute}=["']${escapedKey}["'][^>]*>`, "i"); const tag = `<meta ${attribute}="${key}" content="${escapeAttr(value)}" data-arwp-search-appearance="true">`; html = pattern.test(html) ? html.replace(pattern, tag) : html.replace(/<\/head>/i, `${tag}\n</head>`); };
+ensureMeta("property", "og:site_name", hostSiteName);
+ensureMeta("property", "og:title", title);
+ensureMeta("property", "og:description", description);
+ensureMeta("property", "og:url", canonical);
+ensureMeta("name", "twitter:title", title);
+ensureMeta("name", "twitter:description", description);
+const faviconTag = `<link rel="icon" type="image/png" sizes="192x192" href="${favicon}" data-arwp-search-appearance="true">`;
+if (/<link\s+[^>]*data-arwp-search-appearance=["']true["'][^>]*rel=["']icon["'][^>]*>/i.test(html)) html = html.replace(/<link\s+[^>]*data-arwp-search-appearance=["']true["'][^>]*rel=["']icon["'][^>]*>/i, faviconTag); else html = html.replace(/<\/head>/i, `${faviconTag}\n</head>`);
 fs.writeFileSync(homepage, html);
 if ((html.match(/id="arwp-profile-discovery"/g) || []).length !== 1) throw new Error("Expected one profile discovery link");
-console.log(`ARWP staged: ${path.relative(root, destination)}; discovery=${href}`);
+if ((html.match(/data-arwp-search-appearance="true"/g) || []).length < 7) throw new Error("Search appearance metadata was not staged completely");
+console.log(`ARWP staged: ${path.relative(root, destination)}; discovery=${href}; search-identity=${hostSiteName}`);
